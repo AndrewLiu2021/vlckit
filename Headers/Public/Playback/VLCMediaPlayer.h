@@ -624,6 +624,11 @@ typedef NS_ENUM(unsigned, VLCAudioMixMode)
 - (void)stop;
 
 /**
+ * Release the playing.
+ */
+- (void)releaseMedidPlayer;
+
+/**
  * Advance one frame.
  */
 - (void)gotoNextFrame;

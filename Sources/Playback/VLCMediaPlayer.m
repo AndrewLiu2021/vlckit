@@ -96,6 +96,7 @@ NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state)
 
 // TODO: Documentation
 @interface VLCMediaPlayer (Private)
+@property (nonatomic,assign) BOOL isReleased;
 
 - (instancetype)initWithDrawable:(id)aDrawable options:(NSArray *)options;
 
@@ -510,24 +511,9 @@ static void HandleMediaPlayerRecord(const libvlc_event_t * event, void * opaque)
 
 - (void)dealloc
 {
-    [self stopTimeChangeUpdateTimer];
-    [self unregisterObservers];
-
-    // Always get rid of the delegate first so we can stop sending messages to it
-    // TODO: Should we tell the delegate that we're shutting down?
-    _delegate = nil;
-
-    // Clear our drawable as we are going to release it, we don't
-    // want the core to use it from this point.
-    libvlc_media_player_set_nsobject(_playerInstance, nil);
-    _drawable = nil;
-
-    libvlc_media_player_set_equalizer(_playerInstance, NULL);
-
-    if (_viewpoint)
-        libvlc_free(_viewpoint);
-
-    libvlc_media_player_release(_playerInstance);
+    if (!self.isReleased) {
+        [self releaseMedidPlayer];
+    }
 }
 
 #if !TARGET_OS_IPHONE
@@ -1115,6 +1101,32 @@ static void HandleMediaPlayerRecord(const libvlc_event_t * event, void * opaque)
 - (void)stop
 {
     libvlc_media_player_stop_async(_playerInstance);
+}
+
+- (void)releaseMedidPlayer {
+    if (!self.isReleased) {
+        NSLog(@"release media player");
+        [self stopTimeChangeUpdateTimer];
+        [self unregisterObservers];
+
+        // Always get rid of the delegate first so we can stop sending messages to it
+        // TODO: Should we tell the delegate that we're shutting down?
+        _delegate = nil;
+
+        // Clear our drawable as we are going to release it, we don't
+        // want the core to use it from this point.
+        libvlc_media_player_set_nsobject(_playerInstance, nil);
+        _drawable = nil;
+
+        libvlc_media_player_set_equalizer(_playerInstance, NULL);
+
+        if (_viewpoint)
+            libvlc_free(_viewpoint);
+
+        libvlc_media_player_release(_playerInstance);
+        self.isReleased = YES;
+    }
+    
 }
 
 - (libvlc_video_viewpoint_t *)viewPoint
